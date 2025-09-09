@@ -1,0 +1,120 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Logging Service API",
+    "version": "1.0.0",
+    "description": "Stores sensor decisions with TTL (7 days)."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3002",
+      "description": "Local host"
+    },
+    {
+      "url": "http://logging-service:3002",
+      "description": "Docker compose network"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "Service OK",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ok": {
+                    "value": {
+                      "ok": true,
+                      "service": "logging",
+                      "port": 3002
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/log": {
+      "post": {
+        "summary": "Create a log entry (manual or automatic)",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "examples": {
+                "auto": {
+                  "value": {
+                    "sensorId": "sensor-3",
+                    "motion": true,
+                    "lightLevel": 22,
+                    "decision": "ON",
+                    "source": "automatic",
+                    "timestamp": "2025-09-09T10:00:00Z"
+                  }
+                },
+                "manual": {
+                  "value": {
+                    "sensorId": "sensor-1",
+                    "motion": false,
+                    "lightLevel": 75,
+                    "decision": "OFF",
+                    "source": "manual"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Validation error"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/logs": {
+      "get": {
+        "summary": "Fetch recent logs",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 200
+            },
+            "description": "Max number of items"
+          },
+          {
+            "name": "sensorId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by sensorId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of logs"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+*.env
+
+# Logs
+logs/
+*.log
+*.out
+*.err
+
+# Docker
+*.pid
+*.seed
+*.pid.lock
+docker-compose.override.yml
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node-RED runtime data
+NodeRED/.config.json
+NodeRED/.sessions.json
+NodeRED/lib/
+NodeRED/.flows_cred.json
+NodeRED/flows*.json.backup

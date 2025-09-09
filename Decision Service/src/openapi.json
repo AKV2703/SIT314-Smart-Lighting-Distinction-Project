@@ -1,0 +1,87 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Decision Service API",
+    "version": "1.0.0",
+    "description": "Returns ON/OFF decisions based on motion and light level."
+  },
+  "servers": [
+    { "url": "http://localhost:3001", "description": "Local host" },
+    { "url": "http://decision-service:3001", "description": "Docker compose network" }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "Service OK",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ok": { "value": { "ok": true, "service": "decision", "port": 3001 } }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/decision": {
+      "post": {
+        "summary": "Get decision for a sensor reading",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "examples": {
+                "sample": {
+                  "value": {
+                    "sensorId": "sensor-1",
+                    "motion": true,
+                    "lightLevel": 18,
+                    "timestamp": "2025-09-09T10:00:00Z",
+                    "apiKey": "anish-dev"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Decision response",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "on": {
+                    "value": {
+                      "ok": true,
+                      "decision": "ON",
+                      "sensorId": "sensor-1",
+                      "motion": true,
+                      "lightLevel": 18,
+                      "timestamp": "2025-09-09T10:00:00Z"
+                    }
+                  },
+                  "off": {
+                    "value": {
+                      "ok": true,
+                      "decision": "OFF",
+                      "sensorId": "sensor-2",
+                      "motion": false,
+                      "lightLevel": 62,
+                      "timestamp": "2025-09-09T10:01:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Bad payload (require boolean motion, numeric lightLevel)" },
+          "401": { "description": "Unauthorized (wrong apiKey when DECISION_SECRET is set)" }
+        }
+      }
+    }
+  }
+}

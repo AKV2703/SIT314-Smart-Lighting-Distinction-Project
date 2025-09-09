@@ -1,0 +1,100 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Override Service API",
+    "version": "1.0.0",
+    "description": "Set or clear per-sensor manual override (ON/OFF)."
+  },
+  "servers": [
+    { "url": "http://localhost:3003", "description": "Local host" },
+    { "url": "http://override-service:3003", "description": "Docker compose network" }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "responses": {
+          "200": {
+            "description": "Service OK",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ok": { "value": { "ok": true, "service": "override", "port": 3003 } }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/override/{sensorId}": {
+      "get": {
+        "summary": "Get current override state",
+        "parameters": [
+          { "name": "sensorId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Override status",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "active": { "value": { "ok": true, "active": true, "decision": "ON" } },
+                  "inactive": { "value": { "ok": true, "active": false } }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Set override ON/OFF",
+        "parameters": [
+          { "name": "sensorId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "examples": {
+                "on":  { "value": { "decision": "ON" } },
+                "off": { "value": { "decision": "OFF" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Override set",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ok": { "value": { "ok": true, "active": true, "decision": "ON" } }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid decision" }
+        }
+      },
+      "delete": {
+        "summary": "Clear override (back to automatic)",
+        "parameters": [
+          { "name": "sensorId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Override cleared",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "ok": { "value": { "ok": true, "cleared": true } }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

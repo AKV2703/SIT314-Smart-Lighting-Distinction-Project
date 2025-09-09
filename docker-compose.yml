@@ -1,0 +1,116 @@
+name: smart-lighting
+
+services:
+  # DATABASE LAYER
+  mongo:
+    image: mongo:7
+    container_name: mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: smartlight
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo-express:
+    image: mongo-express:1
+    container_name: mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"   # http://localhost:8081
+    environment:
+      ME_CONFIG_MONGODB_SERVER: mongo
+      ME_CONFIG_MONGODB_ENABLE_ADMIN: "true"
+      ME_CONFIG_BASICAUTH: "false"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  # MICROSERVICES
+  decision-service:
+    build:
+      context: "./Decision Service"
+      dockerfile: Dockerfile
+    container_name: decision-service
+    restart: unless-stopped
+    ports:
+      - "3001:3001"   # http://localhost:3001
+    env_file:
+      - "./Decision Service/.env"   # PORT, DECISION_SECRET
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  logging-service:
+    build:
+      context: "./Logging Service"
+      dockerfile: Dockerfile
+    container_name: logging-service
+    restart: unless-stopped
+    ports:
+      - "3002:3002"   # http://localhost:3002
+    env_file:
+      - "./Logging Service/.env"    # PORT, MONGO_URI
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3002/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  override-service:
+    build:
+      context: "./Override Service"
+      dockerfile: Dockerfile
+    container_name: override-service
+    restart: unless-stopped
+    ports:
+      - "3003:3003"   # http://localhost:3003
+    env_file:
+      - "./Override Service/.env"   # PORT, MONGO_URI
+    depends_on:
+      mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3003/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # NODE-RED
+  nodered:
+    image: nodered/node-red:3.1
+    container_name: nodered
+    restart: unless-stopped
+    ports:
+      - "1880:1880"   # http://localhost:1880 (dashboard: /ui)
+    environment:
+      - TZ=Australia/Melbourne
+      # - FLOWS=flows.json         # uncomment if your flow file has a custom name
+    volumes:
+      - ./NodeRED:/data            # persist flows/settings
+
+  # SENSOR SIMULATOR
+  sensor-simulator:
+    build:
+      context: "./Sensor Simulator"
+      dockerfile: Dockerfile
+    container_name: sensor-simulator
+    restart: unless-stopped
+    env_file:
+      - "./Sensor Simulator/.env"
+    depends_on:
+      - nodered
+
+volumes:
+  mongo_data:

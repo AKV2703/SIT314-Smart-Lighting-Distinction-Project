@@ -1,0 +1,271 @@
+[
+    {
+        "id": "tab-smartlighting-local",
+        "type": "tab",
+        "label": "Smart Lighting – Local API Flow",
+        "disabled": false,
+        "info": "POST /sensors -> validate -> check override -> (manual or decision) -> log"
+    },
+    {
+        "id": "in-sensors",
+        "type": "http in",
+        "z": "tab-smartlighting-local",
+        "name": "Sensors In (POST /sensors)",
+        "url": "/sensors",
+        "method": "post",
+        "upload": false,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 340,
+        "y": 640,
+        "wires": [
+            [
+                "json-parse"
+            ]
+        ]
+    },
+    {
+        "id": "json-parse",
+        "type": "json",
+        "z": "tab-smartlighting-local",
+        "name": "Parse JSON",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 510,
+        "y": 540,
+        "wires": [
+            [
+                "fn-validate"
+            ]
+        ]
+    },
+    {
+        "id": "fn-validate",
+        "type": "function",
+        "z": "tab-smartlighting-local",
+        "name": "Validate payload",
+        "func": "const p = msg.payload || {};\nconst hasBoolMotion = typeof p.motion === 'boolean';\nconst ll = Number(p.lightLevel);\nconst hasLight = Number.isFinite(ll);\nif (!hasBoolMotion || !hasLight) {\n    const err = { ok:false, error:'Invalid payload: require boolean \"motion\" and numeric \"lightLevel\"' };\n    return [null, { statusCode: 400, payload: err }];\n}\nmsg.sensorId   = p.sensorId || null;\nmsg.motion     = p.motion;\nmsg.lightLevel = ll;\nmsg.timestamp  = p.timestamp || new Date().toISOString();\nreturn [msg, null];",
+        "outputs": 2,
+        "noerr": 0,
+        "x": 680,
+        "y": 640,
+        "wires": [
+            [
+                "http-get-override"
+            ],
+            [
+                "http-400"
+            ]
+        ]
+    },
+    {
+        "id": "http-400",
+        "type": "http response",
+        "z": "tab-smartlighting-local",
+        "name": "HTTP 400",
+        "statusCode": "",
+        "headers": {},
+        "x": 860,
+        "y": 700,
+        "wires": []
+    },
+    {
+        "id": "http-get-override",
+        "type": "http request",
+        "z": "tab-smartlighting-local",
+        "name": "GET override-service:3003/override/:sensorId",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "http://override-service:3003/override/{{{sensorId}}}",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 950,
+        "y": 580,
+        "wires": [
+            [
+                "sw-override"
+            ]
+        ]
+    },
+    {
+        "id": "sw-override",
+        "type": "switch",
+        "z": "tab-smartlighting-local",
+        "name": "Override active?",
+        "property": "payload.active",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "true"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 1280,
+        "y": 580,
+        "wires": [
+            [
+                "fn-manual"
+            ],
+            [
+                "fn-build-decision"
+            ]
+        ]
+    },
+    {
+        "id": "fn-manual",
+        "type": "function",
+        "z": "tab-smartlighting-local",
+        "name": "Build MANUAL response + LOG",
+        "func": "const o = msg.payload || {};\nconst out = {\n  ok: true,\n  decision: o.decision,\n  sensorId: msg.sensorId,\n  motion: msg.motion,\n  lightLevel: msg.lightLevel,\n  timestamp: msg.timestamp,\n  source: \"manual\"\n};\nreturn [\n  { headers: { \"Content-Type\": \"application/json\" }, payload: out },\n  Object.assign({}, msg, { statusCode: 200, payload: out })\n];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1990,
+        "y": 480,
+        "wires": [
+            [
+                "http-log-manual"
+            ],
+            [
+                "http-200-auto"
+            ]
+        ]
+    },
+    {
+        "id": "http-log-manual",
+        "type": "http request",
+        "z": "tab-smartlighting-local",
+        "name": "POST logging-service:3002/log (manual)",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "body",
+        "url": "http://logging-service:3002/log",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 2440,
+        "y": 420,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "fn-build-decision",
+        "type": "function",
+        "z": "tab-smartlighting-local",
+        "name": "Prepare Decision POST body",
+        "func": "const secret = env.get(\"DECISION_SECRET\") || \"anish-dev\";\nmsg.headers = {\"Content-Type\":\"application/json\"};\nmsg.payload = {\n  sensorId: msg.sensorId,\n  motion: msg.motion,\n  lightLevel: msg.lightLevel,\n  timestamp: msg.timestamp,\n  apiKey: secret\n};\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1560,
+        "y": 700,
+        "wires": [
+            [
+                "http-post-decision"
+            ]
+        ]
+    },
+    {
+        "id": "http-post-decision",
+        "type": "http request",
+        "z": "tab-smartlighting-local",
+        "name": "POST decision-service:3001/decision",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "body",
+        "url": "http://decision-service:3001/decision",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1770,
+        "y": 620,
+        "wires": [
+            [
+                "fn-split-auto"
+            ]
+        ]
+    },
+    {
+        "id": "fn-split-auto",
+        "type": "function",
+        "z": "tab-smartlighting-local",
+        "name": "Split RESPONSE + LOG (automatic)",
+        "func": "const d = msg.payload || {};\nconst logBody = {\n  sensorId: d.sensorId,\n  motion: d.motion,\n  lightLevel: d.lightLevel,\n  decision: d.decision,\n  timestamp: d.timestamp,\n  source: \"automatic\"\n};\nreturn [\n  Object.assign({}, msg, { statusCode: 200 }),\n  { headers: {\"Content-Type\":\"application/json\"}, payload: logBody }\n];",
+        "outputs": 2,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2010,
+        "y": 700,
+        "wires": [
+            [
+                "http-200-auto"
+            ],
+            [
+                "http-log-auto"
+            ]
+        ]
+    },
+    {
+        "id": "http-200-auto",
+        "type": "http response",
+        "z": "tab-smartlighting-local",
+        "name": "HTTP 200",
+        "statusCode": "",
+        "headers": {},
+        "x": 2360,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "http-log-auto",
+        "type": "http request",
+        "z": "tab-smartlighting-local",
+        "name": "POST logging-service:3002/log (automatic)",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "body",
+        "url": "http://logging-service:3002/log",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 2450,
+        "y": 800,
+        "wires": [
+            []
+        ]
+    }
+]
