@@ -1,80 +1,199 @@
 [
     {
-        "id": "tab-smartlighting-local",
+        "id": "4d027899e2101df1",
         "type": "tab",
-        "label": "Smart Lighting – Local API Flow",
+        "label": "End-to-end flow for the Smart Lighting System.",
         "disabled": false,
-        "info": "POST /sensors -> validate -> check override -> (manual or decision) -> log"
+        "info": "- Receives sensor data at POST /sensors.\n- Checks Override Service first:\n    • If an override is active → respond with manual decision (ON/OFF).\n    • If no override → forward to Decision Service for automatic decision.\n- Logs all final decisions (manual and automatic) to Logging Service with source field.\n- Designed to integrate with dashboard nodes for monitoring and manual controls.",
+        "env": []
     },
     {
-        "id": "in-sensors",
+        "id": "bf8075222388861f",
+        "type": "ui_base",
+        "theme": {
+            "name": "theme-light",
+            "lightTheme": {
+                "default": "#0094CE",
+                "baseColor": "#0094CE",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
+                "edited": true,
+                "reset": false
+            },
+            "darkTheme": {
+                "default": "#097479",
+                "baseColor": "#097479",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
+                "edited": false
+            },
+            "customTheme": {
+                "name": "Untitled Theme 1",
+                "default": "#4B7930",
+                "baseColor": "#4B7930",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
+            },
+            "themeState": {
+                "base-color": {
+                    "default": "#0094CE",
+                    "value": "#0094CE",
+                    "edited": false
+                },
+                "page-titlebar-backgroundColor": {
+                    "value": "#0094CE",
+                    "edited": false
+                },
+                "page-backgroundColor": {
+                    "value": "#fafafa",
+                    "edited": false
+                },
+                "page-sidebar-backgroundColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "group-textColor": {
+                    "value": "#1bbfff",
+                    "edited": false
+                },
+                "group-borderColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "group-backgroundColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "widget-textColor": {
+                    "value": "#111111",
+                    "edited": false
+                },
+                "widget-backgroundColor": {
+                    "value": "#0094ce",
+                    "edited": false
+                },
+                "widget-borderColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "base-font": {
+                    "value": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
+                }
+            },
+            "angularTheme": {
+                "primary": "indigo",
+                "accents": "blue",
+                "warn": "red",
+                "background": "grey",
+                "palette": "light"
+            }
+        },
+        "site": {
+            "name": "Node-RED Dashboard",
+            "hideToolbar": "false",
+            "allowSwipe": "false",
+            "lockMenu": "false",
+            "allowTempTheme": "true",
+            "dateFormat": "DD/MM/YYYY",
+            "sizes": {
+                "sx": 48,
+                "sy": 48,
+                "gx": 6,
+                "gy": 6,
+                "cx": 6,
+                "cy": 6,
+                "px": 0,
+                "py": 0
+            }
+        }
+    },
+    {
+        "id": "group_live_readings",
+        "type": "ui_group",
+        "name": "Final Decisions",
+        "tab": "e33608b1ccb078bf",
+        "order": 2,
+        "disp": true,
+        "width": "22",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "e33608b1ccb078bf",
+        "type": "ui_tab",
+        "name": "Smart Lighting",
+        "icon": "dashboard",
+        "order": 1,
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "1c5f634e75b33dbf",
+        "type": "ui_group",
+        "name": "Sensor Select",
+        "tab": "e33608b1ccb078bf",
+        "order": 5,
+        "disp": true,
+        "width": "6",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "719b03bdc95c11cd",
         "type": "http in",
-        "z": "tab-smartlighting-local",
-        "name": "Sensors In (POST /sensors)",
+        "z": "4d027899e2101df1",
+        "name": "Sensors In",
         "url": "/sensors",
         "method": "post",
         "upload": false,
-        "skipBodyParsing": false,
         "swaggerDoc": "",
-        "x": 340,
-        "y": 640,
+        "x": 400,
+        "y": 500,
         "wires": [
             [
-                "json-parse"
+                "6fb74098fd3b05e5"
             ]
         ]
     },
     {
-        "id": "json-parse",
+        "id": "6fb74098fd3b05e5",
         "type": "json",
-        "z": "tab-smartlighting-local",
+        "z": "4d027899e2101df1",
         "name": "Parse JSON",
         "property": "payload",
         "action": "obj",
         "pretty": false,
-        "x": 510,
-        "y": 540,
+        "x": 570,
+        "y": 500,
         "wires": [
             [
-                "fn-validate"
+                "74b0bd770dab3093"
             ]
         ]
     },
     {
-        "id": "fn-validate",
+        "id": "74b0bd770dab3093",
         "type": "function",
-        "z": "tab-smartlighting-local",
-        "name": "Validate payload",
-        "func": "const p = msg.payload || {};\nconst hasBoolMotion = typeof p.motion === 'boolean';\nconst ll = Number(p.lightLevel);\nconst hasLight = Number.isFinite(ll);\nif (!hasBoolMotion || !hasLight) {\n    const err = { ok:false, error:'Invalid payload: require boolean \"motion\" and numeric \"lightLevel\"' };\n    return [null, { statusCode: 400, payload: err }];\n}\nmsg.sensorId   = p.sensorId || null;\nmsg.motion     = p.motion;\nmsg.lightLevel = ll;\nmsg.timestamp  = p.timestamp || new Date().toISOString();\nreturn [msg, null];",
-        "outputs": 2,
+        "z": "4d027899e2101df1",
+        "name": "Stash fields",
+        "func": "// Keep values for reuse\nmsg.sensorId   = msg.payload.sensorId;\nmsg.motion     = msg.payload.motion;\nmsg.lightLevel = msg.payload.lightLevel;\nmsg.timestamp  = msg.payload.timestamp || new Date().toISOString();\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
         "noerr": 0,
-        "x": 680,
-        "y": 640,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 750,
+        "y": 500,
         "wires": [
             [
-                "http-get-override"
-            ],
-            [
-                "http-400"
+                "cd112467a080c6b7",
+                "fn_collect_sensors"
             ]
         ]
     },
     {
-        "id": "http-400",
-        "type": "http response",
-        "z": "tab-smartlighting-local",
-        "name": "HTTP 400",
-        "statusCode": "",
-        "headers": {},
-        "x": 860,
-        "y": 700,
-        "wires": []
-    },
-    {
-        "id": "http-get-override",
+        "id": "cd112467a080c6b7",
         "type": "http request",
-        "z": "tab-smartlighting-local",
-        "name": "GET override-service:3003/override/:sensorId",
+        "z": "4d027899e2101df1",
+        "name": "GET Override",
         "method": "GET",
         "ret": "obj",
         "paytoqs": "ignore",
@@ -86,18 +205,18 @@
         "authType": "",
         "senderr": false,
         "headers": [],
-        "x": 950,
-        "y": 580,
+        "x": 1020,
+        "y": 500,
         "wires": [
             [
-                "sw-override"
+                "023aca151eb2f3e0"
             ]
         ]
     },
     {
-        "id": "sw-override",
+        "id": "023aca151eb2f3e0",
         "type": "switch",
-        "z": "tab-smartlighting-local",
+        "z": "4d027899e2101df1",
         "name": "Override active?",
         "property": "payload.active",
         "propertyType": "msg",
@@ -113,86 +232,64 @@
         "repair": false,
         "outputs": 2,
         "x": 1280,
-        "y": 580,
+        "y": 500,
         "wires": [
             [
-                "fn-manual"
+                "812b86790fe7f4b4"
             ],
             [
-                "fn-build-decision"
+                "6f12c95bbed77034"
             ]
         ]
     },
     {
-        "id": "fn-manual",
+        "id": "812b86790fe7f4b4",
         "type": "function",
-        "z": "tab-smartlighting-local",
+        "z": "4d027899e2101df1",
         "name": "Build MANUAL response + LOG",
-        "func": "const o = msg.payload || {};\nconst out = {\n  ok: true,\n  decision: o.decision,\n  sensorId: msg.sensorId,\n  motion: msg.motion,\n  lightLevel: msg.lightLevel,\n  timestamp: msg.timestamp,\n  source: \"manual\"\n};\nreturn [\n  { headers: { \"Content-Type\": \"application/json\" }, payload: out },\n  Object.assign({}, msg, { statusCode: 200, payload: out })\n];",
+        "func": "// msg.payload: { ok:true, active:true, decision:\"ON\"|\"OFF\" }\nconst o = msg.payload || {};\nconst out = {\n  ok: true,\n  decision: o.decision,\n  sensorId: msg.sensorId,\n  motion: msg.motion,\n  lightLevel: msg.lightLevel,\n  timestamp: msg.timestamp,\n  source: \"manual\"\n};\n\nflow.set('lastManual', out);\nmsg._payloadSent = out;\n\n// Output 1 → back to simulator\n// Output 2 → to Logging Service\nreturn [\n  { ...msg, statusCode: 200, payload: out },\n  { headers: {\"Content-Type\": \"application/json\"}, payload: out }\n];",
         "outputs": 2,
         "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1990,
-        "y": 480,
+        "x": 1590,
+        "y": 280,
         "wires": [
             [
-                "http-log-manual"
+                "4f7d247d2f42182c"
             ],
             [
-                "http-200-auto"
+                "5aaa88625c6613d4"
             ]
         ]
     },
     {
-        "id": "http-log-manual",
-        "type": "http request",
-        "z": "tab-smartlighting-local",
-        "name": "POST logging-service:3002/log (manual)",
-        "method": "POST",
-        "ret": "obj",
-        "paytoqs": "body",
-        "url": "http://logging-service:3002/log",
-        "tls": "",
-        "persist": false,
-        "proxy": "",
-        "insecureHTTPParser": false,
-        "authType": "",
-        "senderr": false,
-        "headers": [],
-        "x": 2440,
-        "y": 420,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "fn-build-decision",
+        "id": "6f12c95bbed77034",
         "type": "function",
-        "z": "tab-smartlighting-local",
-        "name": "Prepare Decision POST body",
-        "func": "const secret = env.get(\"DECISION_SECRET\") || \"anish-dev\";\nmsg.headers = {\"Content-Type\":\"application/json\"};\nmsg.payload = {\n  sensorId: msg.sensorId,\n  motion: msg.motion,\n  lightLevel: msg.lightLevel,\n  timestamp: msg.timestamp,\n  apiKey: secret\n};\nreturn msg;",
+        "z": "4d027899e2101df1",
+        "name": "Prepare Decision Request",
+        "func": "msg.headers = { \"Content-Type\": \"application/json\" };\nmsg.payload = {\n  sensorId: msg.sensorId,\n  motion: msg.motion,\n  lightLevel: msg.lightLevel,\n  timestamp: msg.timestamp,\n  apiKey: \"anish-dev\" // must match DECISION_SECRET\n};\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1560,
-        "y": 700,
+        "x": 1570,
+        "y": 600,
         "wires": [
             [
-                "http-post-decision"
+                "39c86f646dd76cfd"
             ]
         ]
     },
     {
-        "id": "http-post-decision",
+        "id": "39c86f646dd76cfd",
         "type": "http request",
-        "z": "tab-smartlighting-local",
-        "name": "POST decision-service:3001/decision",
+        "z": "4d027899e2101df1",
+        "name": "POST Decision",
         "method": "POST",
         "ret": "obj",
         "paytoqs": "body",
@@ -204,53 +301,56 @@
         "authType": "",
         "senderr": false,
         "headers": [],
-        "x": 1770,
+        "x": 1860,
         "y": 620,
         "wires": [
             [
-                "fn-split-auto"
+                "84ea66a25171a199",
+                "aceba2a8d84e4446"
             ]
         ]
     },
     {
-        "id": "fn-split-auto",
+        "id": "84ea66a25171a199",
         "type": "function",
-        "z": "tab-smartlighting-local",
+        "z": "4d027899e2101df1",
         "name": "Split RESPONSE + LOG (automatic)",
-        "func": "const d = msg.payload || {};\nconst logBody = {\n  sensorId: d.sensorId,\n  motion: d.motion,\n  lightLevel: d.lightLevel,\n  decision: d.decision,\n  timestamp: d.timestamp,\n  source: \"automatic\"\n};\nreturn [\n  Object.assign({}, msg, { statusCode: 200 }),\n  { headers: {\"Content-Type\":\"application/json\"}, payload: logBody }\n];",
+        "func": "// Decision reply is in msg.payload\nconst d = msg.payload || {};\nconst logBody = {\n  sensorId: d.sensorId,\n  motion: d.motion,\n  lightLevel: d.lightLevel,\n  decision: d.decision,\n  timestamp: d.timestamp,\n  source: \"automatic\"\n};\n// Output 1 → HTTP Response (send Decision reply as-is)\n// Output 2 → Logging Service\nreturn [\n  { ...msg, statusCode: 200 },\n  { headers: {\"Content-Type\": \"application/json\"}, payload: logBody }\n];",
         "outputs": 2,
         "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 2010,
-        "y": 700,
+        "x": 2130,
+        "y": 680,
         "wires": [
             [
-                "http-200-auto"
+                "8823f7bb37dc4d04"
             ],
             [
-                "http-log-auto"
+                "720717bd64803c6e"
             ]
         ]
     },
     {
-        "id": "http-200-auto",
+        "id": "4f7d247d2f42182c",
         "type": "http response",
-        "z": "tab-smartlighting-local",
+        "z": "4d027899e2101df1",
+        "g": "3ce2742ddf0860de",
         "name": "HTTP 200",
         "statusCode": "",
         "headers": {},
-        "x": 2360,
-        "y": 600,
+        "x": 1820,
+        "y": 200,
         "wires": []
     },
     {
-        "id": "http-log-auto",
+        "id": "5aaa88625c6613d4",
         "type": "http request",
-        "z": "tab-smartlighting-local",
-        "name": "POST logging-service:3002/log (automatic)",
+        "z": "4d027899e2101df1",
+        "g": "3ce2742ddf0860de",
+        "name": "POST Log (manual)",
         "method": "POST",
         "ret": "obj",
         "paytoqs": "body",
@@ -262,10 +362,373 @@
         "authType": "",
         "senderr": false,
         "headers": [],
-        "x": 2450,
-        "y": 800,
+        "x": 1850,
+        "y": 320,
+        "wires": [
+            [
+                "d51935b5b51c5726"
+            ]
+        ]
+    },
+    {
+        "id": "8823f7bb37dc4d04",
+        "type": "http response",
+        "z": "4d027899e2101df1",
+        "name": "HTTP 200",
+        "statusCode": "",
+        "headers": {},
+        "x": 2440,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "720717bd64803c6e",
+        "type": "http request",
+        "z": "4d027899e2101df1",
+        "name": "POST Log (automatic)",
+        "method": "POST",
+        "ret": "obj",
+        "paytoqs": "body",
+        "url": "http://logging-service:3002/log",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 2480,
+        "y": 700,
         "wires": [
             []
+        ]
+    },
+    {
+        "id": "83f27d956d419444",
+        "type": "ui_template",
+        "z": "4d027899e2101df1",
+        "group": "group_live_readings",
+        "name": "Final Decisions Table",
+        "order": 0,
+        "width": "10",
+        "height": "7",
+        "format": "<div ng-bind-html=\"msg.payload\"></div>",
+        "storeOutMessages": true,
+        "fwdInMessages": true,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 2620,
+        "y": 440,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e3fdf227c1854191",
+        "type": "function",
+        "z": "4d027899e2101df1",
+        "name": "Build Decisions Table",
+        "func": "let map = flow.get('decisionsData') || {};\nconst d = msg.payload || {};\n\nif (!d.sensorId) return null;\n\n// Update latest decision for each sensor\nmap[d.sensorId] = {\n  sensorId: d.sensorId,\n  motion: d.motion,\n  lightLevel: d.lightLevel,\n  decision: d.decision || \"-\",\n  source: d.source || \"-\",\n  timestamp: d.timestamp\n};\nflow.set('decisionsData', map);\n\n// Build table rows\nconst rows = Object.values(map)\n  .sort((a, b) => a.sensorId.localeCompare(b.sensorId))\n  .map(s => {\n    let state = \"-\";\n    if (s.decision === \"ON\") {\n      state = `ON 💡`;\n    } else if (s.decision === \"OFF\") {\n      state = `OFF ⚫`;\n    }\n\n    return `\n      <tr>\n        <td>${s.sensorId}</td>\n        <td>${s.motion ? \"Yes\" : \"No\"}</td>\n        <td>${s.lightLevel ?? \"\"}</td>\n        <td style=\"font-weight:bold;text-align:center\">${state}</td>\n        <td>${s.source}</td>\n        <td>${new Date(s.timestamp).toLocaleString()}</td>\n      </tr>`;\n  }).join(\"\");\n\nconst header = `\n  <tr>\n    <th>Sensor ID</th>\n    <th>Motion Detected?</th>\n    <th>Light Level (Lux)</th>\n    <th>Light State</th>\n    <th>Decision Source</th>\n    <th>Last Updated</th>\n  </tr>`;\n\nmsg.payload = `\n  <h3 style=\"text-align:center;margin:10px 0;color:#333;\">\n    Smart Lighting System — Latest Decisions\n  </h3>\n  <table style=\"\n    width:100%;\n    border-collapse:collapse;\n    font-family: sans-serif;\n    border:1px solid #ddd;\n  \">\n    ${header}\n    ${rows || `<tr><td colspan=\"6\" style=\"text-align:center;color:#777;\">No decisions yet…</td></tr>`}\n  </table>\n  <style>\n    table td, table th {\n      border: 1px solid #ddd;\n      padding: 6px;\n      text-align: center;\n      vertical-align: middle;\n    }\n    table th {\n      background: #f2f2f2;\n      font-weight: bold;\n    }\n    table tr:nth-child(even) { background: #fafafa; }\n  </style>\n`;\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2360,
+        "y": 440,
+        "wires": [
+            [
+                "83f27d956d419444"
+            ]
+        ]
+    },
+    {
+        "id": "aceba2a8d84e4446",
+        "type": "change",
+        "z": "4d027899e2101df1",
+        "name": "Mark source=automatic",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload.source",
+                "pt": "msg",
+                "to": "automatic",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 2090,
+        "y": 560,
+        "wires": [
+            [
+                "e3fdf227c1854191"
+            ]
+        ]
+    },
+    {
+        "id": "fn_collect_sensors",
+        "type": "function",
+        "z": "4d027899e2101df1",
+        "name": "Collect Sensor IDs",
+        "func": "// Get current sensors\nlet sensors = flow.get('sensors') || [];\n\n// Get incoming sensorId\nconst sid = msg.sensorId;\n\n// Add if not already in list\nif (sid && !sensors.includes(sid)) {\n    sensors.push(sid);\n}\n\n// Sort and remove duplicates\nsensors = [...new Set(sensors)].sort();\nflow.set('sensors', sensors);\n\n// Build dropdown options\nmsg.options = sensors.map(s => ({ [s]: s }));\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 910,
+        "y": 700,
+        "wires": [
+            [
+                "ui_dropdown_sensors"
+            ]
+        ]
+    },
+    {
+        "id": "ui_dropdown_sensors",
+        "type": "ui_dropdown",
+        "z": "4d027899e2101df1",
+        "name": "Choose Sensor",
+        "label": "Select Sensor",
+        "tooltip": "",
+        "place": "Select a sensor",
+        "group": "1c5f634e75b33dbf",
+        "order": 1,
+        "width": 6,
+        "height": 1,
+        "passthru": true,
+        "multiple": true,
+        "options": [],
+        "payload": "",
+        "topic": "selectedSensor",
+        "topicType": "str",
+        "className": "",
+        "x": 1160,
+        "y": 700,
+        "wires": [
+            [
+                "join_override"
+            ]
+        ]
+    },
+    {
+        "id": "196c8f0a66f8112f",
+        "type": "ui_button",
+        "z": "4d027899e2101df1",
+        "name": "",
+        "group": "1c5f634e75b33dbf",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "Override ON",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "ON",
+        "payloadType": "str",
+        "topic": "action",
+        "topicType": "str",
+        "x": 1170,
+        "y": 780,
+        "wires": [
+            [
+                "join_override"
+            ]
+        ]
+    },
+    {
+        "id": "cb69f6604451db53",
+        "type": "ui_button",
+        "z": "4d027899e2101df1",
+        "name": "",
+        "group": "1c5f634e75b33dbf",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "Override OFF",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "OFF",
+        "payloadType": "str",
+        "topic": "action",
+        "topicType": "str",
+        "x": 1160,
+        "y": 860,
+        "wires": [
+            [
+                "join_override"
+            ]
+        ]
+    },
+    {
+        "id": "join_override",
+        "type": "join",
+        "z": "4d027899e2101df1",
+        "name": "Join Sensor + Action",
+        "mode": "custom",
+        "build": "object",
+        "property": "payload",
+        "propertyType": "msg",
+        "key": "topic",
+        "joiner": "\\n",
+        "joinerType": "str",
+        "accumulate": false,
+        "timeout": "",
+        "count": "2",
+        "reduceRight": false,
+        "reduceExp": "",
+        "reduceInit": "",
+        "reduceInitType": "",
+        "reduceFixup": "",
+        "x": 1400,
+        "y": 780,
+        "wires": [
+            [
+                "03ab7131c0a00842"
+            ]
+        ]
+    },
+    {
+        "id": "03ab7131c0a00842",
+        "type": "function",
+        "z": "4d027899e2101df1",
+        "name": "Build Override Requests",
+        "func": "const sensors = msg.payload.selectedSensor;\nconst action = msg.payload.action;\n\nif (!Array.isArray(sensors) || sensors.length === 0) {\n    node.warn(\"No sensors selected\");\n    return null;\n}\n\nlet messages = [];\n\nif (action === \"CLEAR\") {\n    // Send DELETE to clear overrides\n    messages = sensors.map(sid => ({\n        method: \"DELETE\",\n        url: `http://override-service:3003/override/${sid}`,\n        headers: { \"Content-Type\": \"application/json\" },\n        payload: {}\n    }));\n} else if ([\"ON\", \"OFF\"].includes(action)) {\n    // Send PUT to activate override\n    messages = sensors.map(sid => ({\n        method: \"PUT\",\n        url: `http://override-service:3003/override/${sid}`,\n        headers: { \"Content-Type\": \"application/json\" },\n        payload: { decision: action }\n    }));\n} else {\n    node.warn(\"Invalid action\");\n    return null;\n}\n\nreturn [messages];",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1650,
+        "y": 780,
+        "wires": [
+            [
+                "http_override_request"
+            ]
+        ]
+    },
+    {
+        "id": "http_override_request",
+        "type": "http request",
+        "z": "4d027899e2101df1",
+        "name": "Send Override to Backend",
+        "method": "use",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1940,
+        "y": 780,
+        "wires": [
+            [
+                "a12b34cd5678ef90"
+            ]
+        ]
+    },
+    {
+        "id": "a12b34cd5678ef90",
+        "type": "function",
+        "z": "4d027899e2101df1",
+        "name": "Format Toast Message",
+        "func": "const d = msg.payload || {};\n\n// Extract decision and sensor info (if available)\nconst decision = d.decision || \"?\";\nconst sid = d.sensorId || \"selected sensor(s)\";\n\n// Build friendly message\nmsg.payload = `Override ${decision} applied successfully for ${sid}`;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2220,
+        "y": 780,
+        "wires": [
+            [
+                "b90a72de3e1d456f"
+            ]
+        ]
+    },
+    {
+        "id": "b90a72de3e1d456f",
+        "type": "ui_toast",
+        "z": "4d027899e2101df1",
+        "position": "top right",
+        "displayTime": "3",
+        "highlight": "",
+        "outputs": 0,
+        "ok": "OK",
+        "cancel": "",
+        "raw": false,
+        "topic": "",
+        "name": "Override Status Toast",
+        "x": 2460,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "button_clear_override",
+        "type": "ui_button",
+        "z": "4d027899e2101df1",
+        "name": "",
+        "group": "1c5f634e75b33dbf",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "Clear Override",
+        "tooltip": "Switch back to automatic control",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "CLEAR",
+        "payloadType": "str",
+        "topic": "action",
+        "topicType": "str",
+        "x": 1160,
+        "y": 960,
+        "wires": [
+            [
+                "join_override"
+            ]
+        ]
+    },
+    {
+        "id": "d51935b5b51c5726",
+        "type": "function",
+        "z": "4d027899e2101df1",
+        "g": "3ce2742ddf0860de",
+        "name": "Rebuild Manual Log for Dashboard",
+        "func": "// rebuild the payload for the dashboard \nconst lastSent = msg._payloadSent || flow.get('lastManual') || {};\nmsg.payload = lastSent;\n\n// Ensure it shows as manual\nmsg.payload.source = \"manual\";\n\n// Return for dashboard table\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 2120,
+        "y": 320,
+        "wires": [
+            [
+                "e3fdf227c1854191"
+            ]
         ]
     }
 ]

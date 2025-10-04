@@ -9,24 +9,6 @@ function err(res, code, message) {
     return res.status(code).json({ ok: false, error: message });
 }
 
-// POST /override  { sensorId, decision: "ON"|"OFF" }
-exports.setOverride = async (req, res, next) => {
-    try {
-        const { sensorId, decision } = req.body || {};
-        if (!sensorId || !['ON','OFF'].includes(decision)) {
-        return err(res, 400, 'Invalid payload: need sensorId and decision "ON|OFF"');
-        }
-
-        const doc = await Override.findOneAndUpdate(
-        { sensorId },
-        { sensorId, decision },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
-        ).lean();
-
-        return ok(res, { override: doc });
-    } catch (e) { next(e); }
-};
-
 // GET /override/:sensorId
 exports.getOverride = async (req, res, next) => {
     try {
@@ -37,10 +19,35 @@ exports.getOverride = async (req, res, next) => {
         if (!doc) return ok(res, { active: false });
 
         return ok(res, { active: true, decision: doc.decision });
-    } catch (e) { next(e); }
+    } catch (e) {
+        next(e);
+    }
 };
 
-// DELETE /override/:sensorId  (switch to Automatic)
+// PUT /override/:sensorId
+exports.setOverride = async (req, res, next) => {
+    try {
+        const { sensorId } = req.params;
+        const { decision } = req.body;
+
+        if (!sensorId) return err(res, 400, 'Missing sensorId');
+        if (!["ON", "OFF"].includes(decision)) {
+            return err(res, 400, 'Invalid decision, must be ON or OFF');
+        }
+
+        const updated = await Override.findOneAndUpdate(
+            { sensorId },
+            { sensorId, decision },
+            { upsert: true, new: true }
+        ).lean();
+
+        return ok(res, { active: true, decision: updated.decision });
+    } catch (e) {
+        next(e);
+    }
+};
+
+// DELETE /override/:sensorId (switch back to Automatic)
 exports.clearOverride = async (req, res, next) => {
     try {
         const { sensorId } = req.params;
@@ -48,7 +55,10 @@ exports.clearOverride = async (req, res, next) => {
 
         await Override.deleteOne({ sensorId });
         return ok(res, { cleared: true });
-    } catch (e) { next(e); }
+    } catch (e) {
+        next(e);
+    }
 };
 
+// Health check
 exports.health = (_req, res) => ok(res, { service: 'override' });

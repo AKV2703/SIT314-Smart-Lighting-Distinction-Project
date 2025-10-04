@@ -7,7 +7,7 @@ const PORT = process.env.PORT;
 const server = http.createServer(app);
 
 server.listen(PORT, () => {
-    console.log(`Decision Service running at http://localhost:${PORT}`);
+    console.log(`Decision Service running at http://localhost:${PORT}/docs/`);
 });
 
 // error handling: if the port is busy or missing
