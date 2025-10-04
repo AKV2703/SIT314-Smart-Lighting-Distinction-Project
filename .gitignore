@@ -1,4 +1,4 @@
-# Node.js
+# Node.js / npm
 node_modules/
 npm-debug.log*
 yarn-debug.log*
@@ -14,23 +14,22 @@ logs/
 *.out
 *.err
 
-# Docker
+# Docker & PID files
 *.pid
 *.seed
 *.pid.lock
 docker-compose.override.yml
 
-# VS Code
+# IDE / OS files
 .vscode/
 *.code-workspace
-
-# OS files
 .DS_Store
 Thumbs.db
 
-# Node-RED runtime data
-NodeRED/.config.json
-NodeRED/.sessions.json
+# Node-RED runtime, backups, and credentials
+NodeRED/.config*.json
+NodeRED/*.backup
+NodeRED/.flows*.json
+NodeRED/flows_cred.json
 NodeRED/lib/
-NodeRED/.flows_cred.json
-NodeRED/flows*.json.backup
+NodeRED/.sessions.json
