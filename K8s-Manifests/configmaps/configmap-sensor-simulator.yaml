@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configmap-sensor-simulator
+  namespace: smart-lighting
+data:
+  ENDPOINT_URL: "http://node-red-service:1880/sensors"
+  NUM_SENSORS: "5"
+  INTERVAL_MS: "10000"

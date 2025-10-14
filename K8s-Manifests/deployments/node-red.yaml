@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-red-deployment
+  namespace: smart-lighting
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: node-red
+  template:
+    metadata:
+      labels:
+        app: node-red
+    spec:
+      containers:
+      - name: node-red
+        image: smart-lighting-nodered:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 1880
+        resources:
+          requests:
+            cpu: "100m"
+          limits:
+            cpu: "300m"

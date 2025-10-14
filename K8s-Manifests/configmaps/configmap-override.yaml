@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configmap-override
+  namespace: smart-lighting
+data:
+  PORT: "3003"

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configmap-decision
+  namespace: smart-lighting
+data:
+  PORT: "3001"

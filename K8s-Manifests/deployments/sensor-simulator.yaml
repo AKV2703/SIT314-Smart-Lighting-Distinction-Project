@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sensor-simulator-deployment
+  namespace: smart-lighting
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sensor-simulator
+  template:
+    metadata:
+      labels:
+        app: sensor-simulator
+    spec:
+      containers:
+      - name: sensor-simulator
+        image: smart-lighting-sensor-simulator:latest 
+        imagePullPolicy: Never
+        envFrom:
+        - configMapRef:
+            name: configmap-sensor-simulator
+        - secretRef:
+            name: secret-sensor-simulator
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "100Mi"
+          limits:
+            cpu: "200m"
+            memory: "200Mi"

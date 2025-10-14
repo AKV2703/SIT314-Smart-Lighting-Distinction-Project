@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: override-deployment
+  namespace: smart-lighting
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: override
+  template:
+    metadata:
+      labels:
+        app: override
+    spec:
+      containers:
+      - name: override
+        image: smart-lighting-override-service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3003
+        envFrom:
+        - configMapRef:
+            name: configmap-override
+        - secretRef:
+            name: secret-override
+        resources:
+          requests:
+            cpu: "100m"
+          limits:
+            cpu: "500m"

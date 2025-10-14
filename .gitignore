@@ -7,6 +7,8 @@ yarn-error.log*
 # Environment files
 .env
 *.env
+.env.local
+.env.*.local
 
 # Logs
 logs/
@@ -33,3 +35,15 @@ NodeRED/.flows*.json
 NodeRED/flows_cred.json
 NodeRED/lib/
 NodeRED/.sessions.json
+
+# Kubernetes sensitive data
+K8s-Manifests/secrets/*
+!K8s-Manifests/secrets/README.md
+K8s-Manifests/**/*.key
+K8s-Manifests/**/*.crt
+K8s-Manifests/**/*.pem
+
+# Backup or temp files
+*.bak
+*.tmp
+*.swp
