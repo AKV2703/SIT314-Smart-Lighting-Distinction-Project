@@ -1,23 +1,37 @@
 # Smart Lighting System
----
-## Local Deployment Guide
 
-This project implements a **Smart Home Lighting System** using a microservices architecture.  
-It automates lighting decisions based on motion and ambient light levels, and supports **manual override** via a Node-RED dashboard.
+## Overview
+This project implements a **Smart Home Lighting System** using a microservices architecture. It automates lighting decisions based on motion and ambient light levels and supports **manual override** via a Node-RED dashboard.
 
----
-## System Overview
+You can deploy this system in **two ways**:
+1. **Docker Compose** – quick local container-based deployment.
+2. **Kubernetes** (Minikube locally, or EKS in the cloud) – scalable, production-style deployment.
 
-### Microservices
-1. **Decision Service** — Determines whether a light should be ON/OFF based on sensor readings.
-2. **Logging Service** — Stores all light activity logs in MongoDB Atlas.
-3. **Override Service** — Allows manual override of lights (ON/OFF) through Node-RED.
-4. **Sensor Simulator** — Generates simulated sensor data (motion, light level, etc.).
-5. **Node-RED Dashboard** — Displays real-time data and provides manual control.
+> If you use **Docker Compose**, follow the *Docker Deployment* section.  
+> If you use **Kubernetes**, follow the *Kubernetes Deployment* section and carefully read `K8s-Manifests/secrets/README.md` for secrets.
 
 ---
-## Project Structure
 
+## Common Prerequisites (for Docker & Kubernetes)
+- **Docker** (latest stable)
+- **Node.js** v18+ (useful for local testing/debugging)
+- **MongoDB Atlas account** (free M0 tier is sufficient): https://www.mongodb.com/cloud/atlas
+
+### MongoDB Atlas Setup (used by both Docker & Kubernetes)
+1. Create a **Project** (e.g., `Smart Lighting System`) and a **Free Cluster (M0)**.
+2. Create two databases:
+   - `LoggingDB` (for the Logging Service)
+   - `OverrideDB` (for the Override Service)
+3. Create a database user and allow network access from `0.0.0.0/0` (or a tighter range if preferred).
+4. Obtain a connection string like:
+   ```
+   mongodb+srv://<username>:<password>@<cluster-url>/<database>?retryWrites=true&w=majority
+   ```
+   You will use different database names for each service (e.g., `LoggingDB` and `OverrideDB`).
+
+---
+
+## Repository Structure
 ```
 SIT314-Smart-Lighting-Distinction-Project/
 ├── Decision Service/
@@ -25,146 +39,136 @@ SIT314-Smart-Lighting-Distinction-Project/
 ├── Override Service/
 ├── Sensor Simulator/
 ├── NodeRED/
-└── docker-compose.yml
+├── docker-compose.yml
+└── K8s-Manifests/
+    ├── namespaces/
+    ├── deployments/
+    ├── services/
+    ├── autoscaling/
+    ├── configmaps/
+    └── secrets/
+        └── README.md 
 ```
 
 ---
-## Prerequisites
 
-Make sure you have installed:
-- **Docker** and **Docker Compose**
-- **Node.js** (v18+) for local testing
-- **MongoDB Atlas account** (https://www.mongodb.com/cloud/atlas)
+## Docker Deployment
 
----
-## MongoDB Atlas Setup
+### Environment (.env) files (Docker only)
+Create a `.env` file inside each service directory as shown below. **Do not commit** these files.
 
-1. Log in to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas).
-2. Create a **Project** → `Smart Lighting System`.
-3. Create a **Free Cluster** (M0 tier) → `SmartLightCluster`.
-4. In the cluster:
-   - Create **Database 1** → `LoggingDB`
-   - Create **Database 2** → `OverrideDB`
-5. Add a database user:
-   - Username: `<your-username>`
-   - Password: `<your-password>`
-6. Whitelist all IPs: `0.0.0.0/0`
-7. Copy your connection string (example):
-   ```bash
-   mongodb+srv://<username>:<password>@smartlightcluster.xxxxx.mongodb.net/?retryWrites=true&w=majority
-   ```
+**Decision Service – `.env`**
+```
+PORT=3001
+DECISION_SECRET=anish-dev
+```
 
----
-## Environment Variables (.env)
+**Logging Service – `.env`**
+```
+PORT=3002
+MONGO_URI=mongodb+srv://<username>:<password>@<cluster-url>/LoggingDB?retryWrites=true&w=majority
+```
 
-Each microservice requires its own `.env` file.
+**Override Service – `.env`**
+```
+PORT=3003
+MONGO_URI=mongodb+srv://<username>:<password>@<cluster-url>/OverrideDB?retryWrites=true&w=majority
+```
 
-```env
-### Decision Service — .env
+**Sensor Simulator – `.env`**
+```
+ENDPOINT_URL=http://nodered:1880/sensors
+API_KEY=anish-dev
+NUM_SENSORS=5
+INTERVAL_MS=10000
+```
+
+### Run with Docker Compose
 ```bash
-   PORT=3001
-   DECISION_SECRET=anish-dev
+docker compose up --build
 ```
 
-### Logging Service — .env
+### Access (Docker)
+- Decision Service → http://localhost:3001/health
+- Logging Service → http://localhost:3002/health
+- Override Service → http://localhost:3003/health
+- Node-RED Dashboard → http://localhost:1880/ui
+
+### Stop (Docker)
 ```bash
-   PORT=3002
-   MONGO_URI=mongodb+srv://<username>:<password>@<cluster-url>/LoggingDB?retryWrites=true&w=majority
+docker compose down        # stop
+docker compose down -v     # stop and remove volumes
 ```
 
-### Override Service — .env
+---
+
+## Kubernetes Deployment (Minikube)
+
+### Build local images
+Use Minikube’s Docker daemon so the cluster can pull local images:
 ```bash
-   PORT=3003
-   MONGO_URI=mongodb+srv://<username>:<password>@<cluster-url>/OverrideDB?retryWrites=true&w=majority
+minikube start
+eval $(minikube docker-env)
+
+docker build -t smart-lighting-decision-service ./Decision\ Service
+docker build -t smart-lighting-logging-service  ./Logging\ Service
+docker build -t smart-lighting-override-service ./Override\ Service
+docker build -t smart-lighting-nodered          ./NodeRED
+docker build -t smart-lighting-sensor-simulator ./Sensor\ Simulator
 ```
 
-### Sensor Simulator — .env
+### Configure ConfigMaps & Secrets
+- **ConfigMaps** (non-sensitive) are included in `K8s-Manifests/configmaps/`.
+- **Secrets** are **not** committed. Create them locally by following:
+  - `K8s-Manifests/secrets/README.md`
+
+> Kubernetes replaces Docker `.env` files with **ConfigMaps + Secrets**. You do **not** need `.env` files for Kubernetes.
+
+### Deploy
+Use the helper script to apply namespace, configmaps, secrets, deployments, services, and HPAs:
 ```bash
-   ENDPOINT_URL=http://nodered:1880/sensors
-   API_KEY=anish-dev
-   NUM_SENSORS=5
-   INTERVAL_MS=10000
+./deploy.sh
 ```
 
-> Do not commit `.env` files to GitHub.
-
----
-## Local Setup
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/<your-username>/SIT314-Smart-Lighting-Distinction-Project.git
-   cd SIT314-Smart-Lighting-Distinction-Project
-   ```
-
-2. Build and start all containers:
-   ```bash
-   docker compose up --build
-   ```
-
-3. Access services locally:
-   - Decision Service → http://localhost:3001/health  
-   - Logging Service → http://localhost:3002/health  
-   - Override Service → http://localhost:3003/health  
-   - Node-RED Dashboard → http://localhost:1880/ui  
-
-4. MongoDB Atlas will handle persistent data for both logging and override services.
-
----
-## Node-RED Dashboard
-
-The dashboard provides:
-- **Real-time decision table** (automatic + manual decisions)
-- **Manual override controls**
-- **Dropdown to select sensors**
-- **Visualization of system state**
-
-URL: [http://localhost:1880/ui](http://localhost:1880/ui)
-
----
-## Verification Steps
-
-To verify functionality:
-
-1. Open Node-RED dashboard.  
-2. Check sensor data updates in real-time.  
-3. Perform override actions (ON/OFF).  
-4. Verify logs stored in MongoDB Atlas collections:
-   - `LoggingDB.logs`
-   - `OverrideDB.overrides`
-
----
-## Stopping Services
-
-To stop all running containers:
+### Verify
 ```bash
-docker compose down
+kubectl get all -n smart-lighting
 ```
 
-To remove all containers and volumes:
+### Access (Kubernetes / Minikube)
+Default NodePorts:
+- Decision Service → `:30001/health`
+- Logging Service  → `:30002/health`
+- Override Service → `:30003/health`
+- Node-RED Dashboard → `:30004/ui`
+
+To get a usable URL on macOS:
 ```bash
-docker compose down -v
+minikube service node-red-service -n smart-lighting --url
+```
+
+### Autoscaling (HPA)
+HPAs are configured under `K8s-Manifests/autoscaling/`. Use:
+```bash
+kubectl get hpa -n smart-lighting
+kubectl top pods -n smart-lighting
+```
+
+### Cleanup
+To fully remove all resources created in the `smart-lighting` namespace:
+```bash
+./cleanup.sh
 ```
 
 ---
-## Troubleshooting
 
-- If `nodered` fails to install dashboard nodes:
-  ```bash
-  docker exec -it nodered npm install node-red-dashboard
-  ```
-
-- Check container logs:
-  ```bash
-  docker logs <container_name>
-  ```
-
-- If MongoDB Atlas connection fails, verify:
-  - Correct username/password.
-  - Network access set to `0.0.0.0/0`.
-  - Proper database name in `.env`.
+## Notes & Good Practices
+- **Never commit real credentials**. The `K8s-Manifests/secrets/` directory is ignored except for its `README.md`.
+- For Kubernetes, keep environment under **ConfigMaps** (non-sensitive) and **Secrets** (sensitive).
+- The Docker Compose flow is ideal for quick iteration; Kubernetes demonstrates **scalability, load balancing, and self-healing**.
 
 ---
+
 ## Author
 Developed by **Anish Kumar Vaswani**  
-Deakin University — SIT314 Software Scalability (Distinction Project)
+_Deakin University — SIT314 Software Scalability (High Distinction Project)_
